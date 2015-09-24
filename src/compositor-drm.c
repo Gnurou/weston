@@ -715,6 +715,7 @@ drm_output_repaint(struct weston_output *output_base,
 		output_base->set_dpms(output_base, WESTON_DPMS_ON);
 	}
 
+	glFinish();
 	if (drmModePageFlip(backend->drm.fd, output->crtc_id,
 			    output->next->fb_id,
 			    DRM_MODE_PAGE_FLIP_EVENT, output) < 0) {
@@ -838,6 +839,7 @@ drm_output_start_repaint_loop(struct weston_output *output_base)
 	 */
 	fb_id = output->current->fb_id;
 
+        glFinish();
 	if (drmModePageFlip(backend->drm.fd, output->crtc_id, fb_id,
 			    DRM_MODE_PAGE_FLIP_EVENT, output) < 0) {
 		weston_log("queueing pageflip failed: %m\n");

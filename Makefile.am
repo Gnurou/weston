@@ -281,8 +281,9 @@ drm_backend_la_LIBADD =				\
 	$(COMPOSITOR_LIBS)			\
 	$(DRM_COMPOSITOR_LIBS)			\
 	$(INPUT_BACKEND_LIBS)			\
-	libshared.la				\
 	$(CLOCK_GETTIME_LIBS)			\
+	$(SIMPLE_EGL_CLIENT_LIBS)               \
+	libshared.la -lrt			\
 	libsession-helper.la
 drm_backend_la_CFLAGS =				\
 	$(COMPOSITOR_CFLAGS)			\
