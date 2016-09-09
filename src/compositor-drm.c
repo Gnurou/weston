@@ -2871,7 +2871,7 @@ find_primary_gpu(struct drm_backend *b, const char *seat)
 	struct udev_enumerate *e;
 	struct udev_list_entry *entry;
 	const char *path, *device_seat, *id;
-	struct udev_device *device, *drm_device, *pci, *soc = NULL;
+	struct udev_device *device, *drm_device, *pci;
 
 	e = udev_enumerate_new(b->udev);
 	udev_enumerate_add_match_subsystem(e, "drm");
@@ -2904,37 +2904,14 @@ find_primary_gpu(struct drm_backend *b, const char *seat)
 				break;
 			}
 		} else {
-			soc = udev_device_get_parent_with_subsystem_devtype(
-									device,
-									"soc",
-									NULL);
-			if (soc) {
-				id = udev_device_get_sysattr_value(soc,
-								"family");
-				if (id && !strcmp(id, "Tegra")) {
-					if (drm_device) {
-						/* Previously have found the
-						 * drm device, use this device
-						 * as the GBM device
-						 */
-						if (udev_device_get_devnode(
-								device)) {
-							b->gbm.filename = strdup(
-								udev_device_get_devnode(device));
-							break;
-						}
-						continue;
-					}
-					drm_device = device;
-					continue;
-				}
-			}
+			id = udev_device_get_sysname(device);
+			if (!strcmp(id, "card0"))
+				drm_device = device;
+			else if (!strcmp(id, "card1"))
+				b->gbm.filename = strdup(udev_device_get_devnode(device));
+			else
+				udev_device_unref(device);
 		}
-
-		if (!drm_device)
-			drm_device = device;
-		else
-			udev_device_unref(device);
 	}
 
 	udev_enumerate_unref(e);
