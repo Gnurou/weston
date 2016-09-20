@@ -133,23 +133,6 @@ fi
 PKG_CHECK_MODULES(LIBDRM, [libdrm],
                   [AC_DEFINE(HAVE_LIBDRM, 1, [Define if libdrm is available]) have_libdrm=yes], have_libdrm=no)
 
-AC_ARG_ENABLE(libdrm-tegra,
-              AS_HELP_STRING([--disable-libdrm-tegra],
-                             [do not build support for nvidia Jetson TK1]),,
-              enable_libdrm_tegra=auto)
-
-if test "x$enable_libdrm_tegra" != "xno"; then
-    PKG_CHECK_MODULES(LIBDRM_TEGRA,
-                  libdrm_tegra,
-                  have_libdrm_tegra=yes,
-                  have_libdrm_tegra=no)
-    if test "x$have_libdrm_tegra" = "xno" -a "x$enable_libdrm_tegra" = "xyes"; then
-      AC_MSG_ERROR([Tegra support explicitly requested, but libdrm_tegra not found])
-    fi
-    AS_IF([test "x$have_libdrm_tegra" = "xyes"],
-        AC_DEFINE([HAVE_DRM_TEGRA], [1], [Enable tegra support in drm backend]))
-fi
-
 AC_ARG_ENABLE(x11-compositor, [  --enable-x11-compositor],,
 	      enable_x11_compositor=yes)
 AM_CONDITIONAL(ENABLE_X11_COMPOSITOR, test x$enable_x11_compositor = xyes)
@@ -716,5 +699,4 @@ AC_MSG_RESULT([
 	libwebp Support			${have_webp}
 	libunwind Support		${have_libunwind}
 	VA H.264 encoding Support	${have_libva}
-	Tegra DRM Support		${have_libdrm_tegra}
 ])

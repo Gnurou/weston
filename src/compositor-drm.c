@@ -45,9 +45,6 @@
 
 #include <gbm.h>
 #include <libudev.h>
-#ifdef HAVE_DRM_TEGRA
-#include <tegra_drm.h>
-#endif
 
 #include "compositor.h"
 #include "compositor-drm.h"
@@ -229,32 +226,6 @@ static struct gl_renderer_interface *gl_renderer;
 
 static const char default_seat[] = "seat0";
 
-static int
-drm_tegra_import(int fd, uint32_t handle)
-{
-	#ifdef HAVE_DRM_TEGRA
-	struct drm_tegra_gem_set_tiling args;
-	int err;
-
-	memset(&args, 0, sizeof(args));
-	args.handle = handle;
-	args.mode = DRM_TEGRA_GEM_TILING_MODE_BLOCK;
-	args.value = 4;
-
-	err = ioctl(fd, DRM_IOCTL_TEGRA_GEM_SET_TILING, &args);
-	if (err < 0) {
-		weston_log("failed to set tiling parameters: %m\n");
-		return -errno;
-	}
-	return 0;
-	#else
-	weston_log("DRM device is a tegra but weston compiled without "
-		   "libdrm tegra");
-
-	return -1;
-	#endif
-}
-
 static void
 drm_output_set_cursor(struct drm_output *output);
 
@@ -379,6 +350,7 @@ drm_fb_get_from_bo(struct gbm_bo *bo,
 	struct drm_fb *fb = gbm_bo_get_user_data(bo);
 	uint32_t width, height;
 	uint32_t handles[4] = { 0 }, pitches[4] = { 0 }, offsets[4] = { 0 };
+	uint64_t modifier[4] = { 0 };
 	int ret;
 
 	if (fb)
@@ -414,13 +386,6 @@ drm_fb_get_from_bo(struct gbm_bo *bo,
 		}
 
 		close(fd);
-
-	        ret = drm_tegra_import(backend->drm.fd, fb->handle);
-		if (ret < 0) {
-			weston_log("failed to import handle: %s\n",
-				   strerror(-ret));
-			goto err_free;
-		}
 	}
 
 	if (backend->min_width > width || width > backend->max_width ||
@@ -436,10 +401,11 @@ drm_fb_get_from_bo(struct gbm_bo *bo,
 		handles[0] = fb->handle;
 		pitches[0] = fb->stride;
 		offsets[0] = 0;
+		modifier[0] = NV_FORMAT_MOD_TEGRA_BLOCK(4);
 
-		ret = drmModeAddFB2(backend->drm.fd, width, height,
-				    format, handles, pitches, offsets,
-				    &fb->fb_id, 0);
+		ret = drmModeAddFB2WithModifiers(backend->drm.fd, width, height,
+				    format, handles, pitches, offsets, modifier,
+				    &fb->fb_id, DRM_MODE_FB_MODIFIERS);
 		if (ret) {
 			weston_log("addfb2 failed: %m\n");
 			backend->no_addfb2 = 1;
